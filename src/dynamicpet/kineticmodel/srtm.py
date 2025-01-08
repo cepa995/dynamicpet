@@ -164,6 +164,7 @@ class SRTMZhou2003(KineticModel):
         """Get names of kinetic model parameters."""
         return [
             "dvr",
+            "bp",
             "r1",
             "k2",
             "k2a",
@@ -226,6 +227,7 @@ class SRTMZhou2003(KineticModel):
                 tacs_mat = smooth_img.get_fdata()[mask.astype("bool"), :]
 
         dvr = np.zeros((num_elements, 1))
+        bp = np.zeros((num_elements, 1))
         noise_var_eq_dvr = np.zeros((num_elements, 1))
         r1 = np.zeros((num_elements, 1))
         k2 = np.zeros((num_elements, 1))
@@ -238,7 +240,9 @@ class SRTMZhou2003(KineticModel):
 
             # special case when tac is the same as reftac
             if np.allclose(tac, reftac):
+                print('Reference region is same as target region')
                 dvr[k] = 1
+                bp[k] = 0 # Binding Potential (BP) is 0 when DVR is 1
                 r1[k] = 1
                 k2[k] = np.nan
                 k2a[k] = np.nan
@@ -267,6 +271,8 @@ class SRTMZhou2003(KineticModel):
 
             # distribution volume ratio
             dvr[k] = b[0]
+            # compute BP from DVR
+            bp[k] = dvr[k] - 1
 
             # ----- Get R1 -----
             # Set up the weighted linear regression model
@@ -283,6 +289,7 @@ class SRTMZhou2003(KineticModel):
             r1[k], k2[k], k2a[k] = b
 
         self.set_parameter("dvr", dvr, mask)
+        self.set_parameter("bp", bp, mask)
         self.set_parameter("r1", r1, mask)
         self.set_parameter("k2", k2, mask)
         self.set_parameter("k2a", k2a, mask)
